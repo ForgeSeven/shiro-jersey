@@ -1,40 +1,31 @@
 package org.secnod.shiro.jersey;
 
+import org.secnod.shiro.jersey.internal.AuthorizationFilter;
+import org.secnod.shiro.jersey.internal.AuthorizationFilterFactory;
+
 import java.lang.annotation.Annotation;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collections;
-import java.util.List;
+import java.util.*;
 
 import javax.ws.rs.Priorities;
 import javax.ws.rs.container.DynamicFeature;
 import javax.ws.rs.container.ResourceInfo;
 import javax.ws.rs.core.FeatureContext;
 
-import org.apache.shiro.authz.annotation.RequiresAuthentication;
-import org.apache.shiro.authz.annotation.RequiresGuest;
-import org.apache.shiro.authz.annotation.RequiresPermissions;
-import org.apache.shiro.authz.annotation.RequiresRoles;
-import org.apache.shiro.authz.annotation.RequiresUser;
-
 /**
  * Wraps {@link AuthorizationFilter filters} around JAX-RS resources that are annotated with Shiro annotations.
  */
 public class AuthorizationFilterFeature implements DynamicFeature {
 
-    private static List<Class<? extends Annotation>> shiroAnnotations = Collections.unmodifiableList(Arrays.asList(
-            RequiresPermissions.class,
-            RequiresRoles.class,
-            RequiresAuthentication.class,
-            RequiresUser.class,
-            RequiresGuest.class));
-
     @Override
     public void configure(ResourceInfo resourceInfo, FeatureContext context) {
 
+        Map<Class<? extends Annotation>, AnnotationBehaviourFactory> customAnnotationMap = getCustomAnnotationMap();
+        AuthorizationFilterFactory factory = new AuthorizationFilterFactory();
+        factory.addCustomAnnotations(customAnnotationMap);
+
         List<Annotation> authzSpecs = new ArrayList<>();
 
-        for (Class<? extends Annotation> annotationClass : shiroAnnotations) {
+        for (Class<? extends Annotation> annotationClass : factory.getAnnotationHandlerFactoryMap().keySet()) {
             // XXX What is the performance of getAnnotation vs getAnnotations?
             Annotation classAuthzSpec = resourceInfo.getResourceClass().getAnnotation(annotationClass);
             Annotation methodAuthzSpec = resourceInfo.getResourceMethod().getAnnotation(annotationClass);
@@ -44,8 +35,19 @@ public class AuthorizationFilterFeature implements DynamicFeature {
         }
 
         if (!authzSpecs.isEmpty()) {
-            context.register(new AuthorizationFilter(authzSpecs), Priorities.AUTHORIZATION);
+            context.register(factory.createAuthorizationFilter(authzSpecs), Priorities.AUTHORIZATION);
         }
+    }
+
+    /**
+     * Override this to method to provide customer annotations to use in the filters along with
+     * a factory providing the Handler class for the annotation.
+     *
+     * Default implementation provides an empty Map.
+     * @return
+     */
+    protected Map<Class<? extends Annotation>, AnnotationBehaviourFactory> getCustomAnnotationMap() {
+        return Collections.emptyMap();
     }
 
 }

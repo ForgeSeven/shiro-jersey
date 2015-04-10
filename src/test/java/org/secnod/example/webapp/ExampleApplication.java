@@ -3,7 +3,7 @@ package org.secnod.example.webapp;
 import org.glassfish.jersey.server.ResourceConfig;
 import org.secnod.shiro.jaxrs.ShiroExceptionMapper;
 import org.secnod.shiro.jersey.AuthorizationFilterFeature;
-import org.secnod.shiro.jersey.AuthInjectionBinder;
+import org.secnod.shiro.jersey.internal.AuthInjectionBinder;
 import org.secnod.shiro.jersey.SubjectFactory;
 
 /**

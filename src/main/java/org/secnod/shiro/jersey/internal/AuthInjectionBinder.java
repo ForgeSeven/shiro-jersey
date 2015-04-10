@@ -1,4 +1,4 @@
-package org.secnod.shiro.jersey;
+package org.secnod.shiro.jersey.internal;
 
 import javax.inject.Singleton;
 
